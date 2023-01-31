@@ -1,6 +1,6 @@
 mod hostsmanager;
 
-use std::{fs, vec};
+use std::{fs, path::Path, vec};
 
 use hostsmanager::hostsfile::HostsFile;
 use serde_derive::{Deserialize, Serialize};
@@ -39,6 +39,11 @@ fn remove_block(cfg: &mut Config, name: &str) {
 }
 
 fn enable(mut hf: HostsFile, cfg: &mut Config) {
+    let path = Path::new(HOSTSFILEBCK);
+    if path.exists() {
+        panic!("Already enabled");
+    }
+
     for block in &cfg.block {
         hf.block_name_www(block);
     }
