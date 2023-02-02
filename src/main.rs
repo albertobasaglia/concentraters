@@ -20,9 +20,14 @@ impl Default for Config {
     }
 }
 
-fn status(hf: HostsFile, cfg: &Config) {
-    hf.list_entries();
-    println!("Currently blocking:");
+fn status(_hf: HostsFile, cfg: &Config) {
+    if check_enabled() {
+        println!("status: ACTIVE");
+    } else {
+        println!("status: INACTIVE");
+    }
+    // hf.list_entries();
+    println!("Blacklist:");
     for blocked in &cfg.block {
         println!("\t{}", blocked);
     }
@@ -38,12 +43,15 @@ fn remove_block(cfg: &mut Config, name: &str) {
     confy::store(APPNAME, None, cfg).expect("Can't save config");
 }
 
-fn enable(mut hf: HostsFile, cfg: &mut Config) {
+fn check_enabled() -> bool {
     let path = Path::new(HOSTSFILEBCK);
-    if path.exists() {
+    path.exists()
+}
+
+fn enable(mut hf: HostsFile, cfg: &mut Config) {
+    if check_enabled() {
         panic!("Already enabled");
     }
-
     for block in &cfg.block {
         hf.block_name_www(block);
     }
@@ -54,6 +62,13 @@ fn enable(mut hf: HostsFile, cfg: &mut Config) {
 fn disable() {
     fs::copy(HOSTSFILEBCK, HOSTSFILE).expect("Can't restore hosts");
     fs::remove_file(HOSTSFILEBCK).expect("Can't delete backup");
+}
+
+fn refresh(hf: HostsFile, cfg: &mut Config) {
+    if check_enabled() {
+        disable();
+        enable(hf, cfg);
+    }
 }
 
 fn main() {
@@ -67,13 +82,23 @@ fn main() {
         "add" => {
             let name = std::env::args().nth(2).expect("Arg error");
             add_block(&mut cfg, &name);
+            refresh(hf, &mut cfg);
         }
         "remove" => {
             let name = std::env::args().nth(2).expect("Arg error");
             remove_block(&mut cfg, &name);
+            refresh(hf, &mut cfg);
         }
         "enable" => enable(hf, &mut cfg),
         "disable" => disable(),
+        "help" => {
+            let path = confy::get_configuration_file_path(APPNAME, None)
+                .expect("Can't get configuration path");
+            println!(
+                "Path is {}",
+                path.to_str().expect("Can't convert path to string")
+            );
+        }
         _ => todo!(),
     }
 }
