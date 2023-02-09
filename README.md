@@ -1,7 +1,6 @@
 # ConcentrateRS
 
-Simple tool for adding websites to /etc/hosts file to prevent you from
-accessing them.
+Tool for adding websites to /etc/hosts file to prevent you from accessing them.
 
 ## Todo
 
